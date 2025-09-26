@@ -1,0 +1,72 @@
+services:
+  
+  postgresql:
+    image: postgres:latest
+    container_name: devmockin_db
+    environment: &db_creds
+      PGDATA: /var/lib/postgresql/data/devmockin
+      POSTGRES_DB: 'devmockin'
+      POSTGRES_USER: 'devmockin_user'
+      POSTGRES_PASSWORD: 'devmockin_password'
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/devmockin
+  devmockin_backend:
+    environment: &backend_env
+      <<: *db_creds
+      POSTGRES_HOST: postgresql
+      DEBUG: ${DEBUG}
+      SECRET_KEY: ${SECRET_KEY}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+    container_name: devmockin_backend
+    build: .
+    command: gunicorn -c gunicorn.dev.conf.py devmockin.wsgi:application
+    volumes:
+      - .:/app
+    expose:
+      - "8000" 
+    depends_on:
+      - postgresql
+  redis:
+    container_name: devmockin_redis
+    image: redis:6
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+
+  celery: 
+    container_name: devmockin_celery
+    build: .
+    environment: 
+      <<: *backend_env
+      CELERY_BROKER_URL: "redis://redis:6379/0"
+    command: [ "celery", "-A", "devmockin", "worker", "--loglevel", "INFO" ]
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+    depends_on:
+      - postgresql
+      - redis
+  nginx:
+    container_name: devmockin_nginx
+    image: nginx:latest
+    ports: 
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d/:/etc/nginx/conf.d
+      - ./static:/app/static
+      - ./media:/app/media
+    depends_on:
+      - devmockin_backend
+  
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: devmockin_net
+    external: true

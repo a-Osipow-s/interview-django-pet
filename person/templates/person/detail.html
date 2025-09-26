@@ -1,0 +1,18 @@
+{% extends 'person/index.html' %}
+
+{% block page_title %} Person detail {% endblock %}
+
+{% block person_content %}
+<div class="row text-center">
+   <div class="col-3 offset-3">USERNAME: {{ person.user }}</div> 
+   <div class="col-3 ">COMPANY: {{ person.company }}</div> 
+</div>
+<div class="row text-center">
+   <div class="col-3 offset-3">BIO: {{ person.bio|wordwrap:40 }}</div> 
+   <div class="col-3 ">BIRTH DATE: {{ person.birth_date }}</div> 
+</div>
+<div class="row text-center">
+   <div class="col-3 offset-3">JOB TITLE: {{ person.job_title }}</div> 
+   <div class="col-3 ">EXPERIENCE: {{ person.experience }}</div> 
+</div>
+{% endblock %}
