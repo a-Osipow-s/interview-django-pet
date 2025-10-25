@@ -51,9 +51,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # apps
     "person.apps.PersonConfig",
-    "techquiz.apps.TechquizConfig",
     "article.apps.ArticleConfig",
-    "online_editor.apps.OnlineEditorConfig",
     # drf
     "rest_framework",
     # django-celery
@@ -81,8 +79,6 @@ CACHES = {
     }
 }
 ROOT_URLCONF = "devmockin.urls"
-
-FIXTURE_DIRS = ["fixtures"]
 
 TEMPLATES = [
     {

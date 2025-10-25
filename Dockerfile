@@ -1,4 +1,4 @@
-FROM python:3.13.3-slim-bookworm
+FROM python:3.13.3-slim-bookworm AS backend-dev
 
 ENV LANG=C.UTF-8 \
     PYTHONUNBUFFERED=1 \
@@ -17,12 +17,25 @@ RUN apt-get update && \
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-COPY . /app
+COPY backend /app
 
 RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    --mount=type=bind,source=backend/uv.lock,target=uv.lock \
+    --mount=type=bind,source=backend/pyproject.toml,target=pyproject.toml \
     uv sync --locked --no-install-project --no-editable
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-editable --compile-bytecode
+
+
+FROM node:lts-alpine AS frontend-dev
+
+WORKDIR /app
+
+COPY client/package*.json /app
+
+RUN npm install
+
+COPY client /app
+
+EXPOSE 5173
