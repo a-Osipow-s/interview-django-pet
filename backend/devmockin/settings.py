@@ -68,6 +68,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
 CELERY_RESULT_BACKEND = 'django-cache'
@@ -131,12 +132,6 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
-]
-
-MIDDLEWARE = [
-    # ...
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
-    # ...
 ]
 
 INTERNAL_IPS = ['127.0.0.1',]
