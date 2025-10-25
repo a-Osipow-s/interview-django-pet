@@ -16,18 +16,18 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from debug_toolbar.toolbar import debug_toolbar_urls
 from rest_framework.routers import DefaultRouter
 
-from article.views import ArticleTagViewSet
+from article.views import ArticleTagViewSet, ArticleViewSet
 
 
 router = DefaultRouter()
 router.register(r'article-tag', ArticleTagViewSet)
+router.register(r'article', ArticleViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include(router.urls)),
-    # path("accounts/", include("django.contrib.auth.urls")),
-    path('persons/', include('person.urls')),
-]
+] + debug_toolbar_urls()
 

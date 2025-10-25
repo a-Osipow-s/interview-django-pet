@@ -56,6 +56,8 @@ INSTALLED_APPS = [
     "rest_framework",
     # django-celery
     'django_celery_results',
+    # debug
+    "debug_toolbar",
 ]
 
 MIDDLEWARE = [
@@ -131,6 +133,16 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+MIDDLEWARE = [
+    # ...
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
+    # ...
+]
+
+INTERNAL_IPS = ['127.0.0.1',]
+DEBUG_TOOLBAR_CONFIG = {
+    'SHOW_TOOLBAR_CALLBACK': lambda request: True,
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -157,3 +169,5 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+DEFAULT_FROM_EMAIL = 'devmockin@yopmail.com'
