@@ -1,3 +1,5 @@
+from typing import Final
+
 from django.core.mail import send_mail
 from django.conf import settings
 
@@ -9,6 +11,7 @@ from rest_framework.response import Response
 from article.models import Article, ArticleAdditionalInformation, ArticleTag, ArticleReview
 from person.models import Person
 
+DEFAULT_DEPTH: Final = 10
 
 # serializers
 class ArticleAdditionalInformationSerializer(ModelSerializer):
@@ -17,18 +20,16 @@ class ArticleAdditionalInformationSerializer(ModelSerializer):
         fields = '__all__'
 
     def __init__(self, *args, **kwargs):
-        depth = kwargs.pop('depth', None)
+        depth = kwargs.pop('depth', 1)
         super().__init__(*args, **kwargs)
-        
-        if depth is not None:
-            self.Meta.depth = min(depth, 9)
+        self.Meta.depth = depth or DEFAULT_DEPTH
 
 
 class ArticleReviewSerializer(ModelSerializer):
     class Meta:
         model = ArticleReview
         fields = '__all__'
-        depth = 9
+        depth = DEFAULT_DEPTH
 
 
 class ArticleSerializer(ModelSerializer):
@@ -38,12 +39,10 @@ class ArticleSerializer(ModelSerializer):
         fields = '__all__'
 
     def __init__(self, *args, **kwargs):
-        depth = kwargs.pop('depth', None)
+        depth = kwargs.pop('depth', 1)
         super().__init__(*args, **kwargs)
-        
-        if depth is not None:
-            self.Meta.depth = min(depth, 9)
-    
+        self.Meta.depth = depth or DEFAULT_DEPTH
+
     def create(self, validated_data):
         additional_data = validated_data.pop('additional_info', None)
         tags_data = validated_data.pop('tags', [])

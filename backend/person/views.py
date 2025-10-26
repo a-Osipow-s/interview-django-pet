@@ -1,53 +1,64 @@
-from django.shortcuts import render
-from django.http import (
-    HttpResponseNotFound,
-    HttpResponseServerError,
-    HttpRequest,
-)
-from django.contrib.auth.decorators import login_required
-from django.views.generic import ListView, DetailView
+from rest_framework import status
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.serializers import ModelSerializer
+from rest_framework.response import Response
 
-from person.models import Person
+from person.models import Person, Role
 
 
-class IndexView(ListView):
-    model = Person
-    template_name = 'person/index.html'
-    context_object_name = 'persons'
-    allow_empty = True
+# serializers
+class PersonSerializer(ModelSerializer):
+    class Meta:
+        model = Person
+        fields = '__all__'
 
-    def get_context_data(self, **kwargs):
-        return super().get_context_data(**kwargs)
-    
-    def get_queryset(self):
-        return super().get_queryset()
-
-class PersonDetailView(DetailView):
-    model = Person
-    template_name = 'person/detail.html'
-    context_object_name = 'person'
-
-    def get_context_data(self, **kwargs):
-        return super().get_context_data(**kwargs)
+    def __init__(self, *args, **kwargs):
+        depth = kwargs.pop('depth', None)
+        super().__init__(*args, **kwargs)
+        
+        if depth is not None:
+            self.Meta.depth = min(depth, 9)
 
 
-@login_required
-def index(request: HttpRequest):
-    persons: list[Person] = Person.objects.all()
-    context = {"persons": persons}
-    return render(request, "person/index.html", context)
+class RoleSerializer(ModelSerializer):
+    class Meta:
+        model = Role
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        depth = kwargs.pop('depth', None)
+        super().__init__(*args, **kwargs)
+        
+        if depth is not None:
+            self.Meta.depth = min(depth, 9)
 
 
-@login_required
-def detail(request: HttpRequest, person_id: int):
-    person: Person = Person.objects.get(id=person_id)
-    context = {"person": person}
-    return render(request, "person/detail.html", context)
+class PersonViewSet(ModelViewSet):
+    queryset = Person.objects.all()
+    serializer_class = PersonSerializer
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        self.get_serializer(queryset, many=True)
+        result_items = []
+        for person in queryset:
+            result_items.append(
+                {
+                    'bio': person.bio,
+                    'company': person.company,
+                    'job_title': person.job_title,
+                    'user': {
+                        'email': person.user.email,
+                        'first_name': person.user.first_name,
+                        'last_name': person.user.last_name,
+                        'username': person.user.username,
+                    }
+                }
+            )
+
+        return Response(result_items, status=status.HTTP_200_OK)
 
 
-def page_not_found(request: HttpRequest):
-    return HttpResponseNotFound()
-
-
-def server_error(request: HttpRequest):
-    return HttpResponseServerError()
+class RoleViewSet(ModelViewSet):
+    queryset = Role.objects.all().order_by('-created_at')
+    serializer_class = RoleSerializer

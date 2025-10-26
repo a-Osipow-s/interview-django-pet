@@ -20,11 +20,14 @@ from debug_toolbar.toolbar import debug_toolbar_urls
 from rest_framework.routers import DefaultRouter
 
 from article.views import ArticleTagViewSet, ArticleViewSet
+from person.views import PersonViewSet, RoleViewSet
 
 
 router = DefaultRouter()
-router.register(r'article-tag', ArticleTagViewSet)
-router.register(r'article', ArticleViewSet)
+router.register(r'article-tags', ArticleTagViewSet)
+router.register(r'articles', ArticleViewSet)
+router.register(r'persons', PersonViewSet)
+router.register(r'roles', RoleViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
