@@ -62,6 +62,7 @@ services:
     environment: 
       <<: *backend_env
       CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_REDIS_URL: ${CELERY_RESULT_REDIS_URL}
     command: [ "celery", "-A", "devmockin", "worker", "--loglevel", "INFO" ]
     volumes:
       - ./backend:/app

@@ -71,9 +71,10 @@ MIDDLEWARE = [
     "debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 
+CELERY_BROKER_URL = env("CELERY_BROKER_URL")
 CELERY_RESULT_BACKEND = 'django-cache'
-
 CELERY_CACHE_BACKEND = 'default'
+CELERY_TASK_IGNORE_RESULT = False
 
 CACHES = {
     "default": {
@@ -81,6 +82,7 @@ CACHES = {
         "LOCATION": env("CELERY_BROKER_URL"),
     }
 }
+
 ROOT_URLCONF = "devmockin.urls"
 
 TEMPLATES = [
