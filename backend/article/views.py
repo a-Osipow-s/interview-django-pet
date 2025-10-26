@@ -3,7 +3,7 @@ from django.conf import settings
 
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, ListSerializer, ValidationError
 from rest_framework.response import Response
 
 from article.models import Article, ArticleAdditionalInformation, ArticleTag, ArticleReview
@@ -32,6 +32,7 @@ class ArticleReviewSerializer(ModelSerializer):
 
 
 class ArticleSerializer(ModelSerializer):
+    additional_info = ArticleAdditionalInformationSerializer()
     class Meta:
         model = Article
         fields = '__all__'
@@ -42,6 +43,44 @@ class ArticleSerializer(ModelSerializer):
         
         if depth is not None:
             self.Meta.depth = min(depth, 9)
+    
+    def create(self, validated_data):
+        additional_data = validated_data.pop('additional_info', None)
+        tags_data = validated_data.pop('tags', [])
+
+        if not additional_data:
+            raise ValidationError({"additional_info": "This field is required."})
+        
+        additional_info = ArticleAdditionalInformation.objects.create(**additional_data)
+        article = Article.objects.create(additional_info=additional_info, **validated_data)
+
+        if tags_data:
+            article.tags.set(tags_data)
+
+        return article
+
+    def update(self, instance, validated_data):
+        additional_data = validated_data.pop('additional_info', None)
+        tags_data = validated_data.pop('tags', [])
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if additional_data:
+            additional = instance.additional_info
+            if additional:
+                for attr, value in additional_data.items():
+                    setattr(additional, attr, value)
+                additional.save()
+            else:
+                instance.additional_info = ArticleAdditionalInformation.objects.create(**additional_data)
+                instance.save()
+
+        if tags_data:
+            instance.tags.set(tags_data)
+
+        return instance
 
 
 class ArticleTagSerializer(ModelSerializer):
@@ -52,14 +91,14 @@ class ArticleTagSerializer(ModelSerializer):
 
 # views
 def get_article_reviewers():
-    persons = Person.objects.all()
-    result_persons = []
+    persons: list[Person] = Person.objects.all()
+    result_persons: list[Person] = []
     for person in persons:
         roles = [ur.role for ur in person.user_roles.all() if ur.status == 'active']
         for role in roles:
             if role.role_name == 'Reviewer':
                 result_persons.append(person)
-    return person
+    return persons
 
 
 class ArticleTagViewSet(ModelViewSet):
@@ -75,25 +114,44 @@ class ArticleViewSet(ModelViewSet):
         depth: int = self.request.query_params.get('depth')
         if depth:
             kwargs['depth'] = int(depth)
-        return super().get_serializer(*args, **kwargs)
+        serializer = super().get_serializer(*args, **kwargs)
+
+        if isinstance(serializer, ListSerializer):
+            child = serializer.child
+        else:
+            child = serializer
+
+        if self.action == 'list':
+            if 'additional_info' in child.fields:
+                child.fields['additional_info'].read_only = True
+
+        elif self.action == 'create':
+            if 'additional_info' in child.fields:
+                child.fields['additional_info'].write_only = True
+
+        elif self.action == 'update':
+            if 'additional_info' in child.fields:
+                child.fields['additional_info'].read_only = False
+
+        return serializer
 
     def perform_create(self, serializer):
         article: Article = serializer.save()
         author: Person = article.author
-        if author and author.email:
+        if author and author.user.email:
             send_mail(
                 subject=f"New article published: {article.title}",
-                message=f"Hi {author.name}, your article '{article.title}' was successfully created!",
+                message=f"Hi {author.user.first_name} {author.user.last_name}, your article '{article.title}' was successfully created!",
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[author.email],
+                recipient_list=[author.user.email],
                 fail_silently=False,
             )
         for reviewer in get_article_reviewers():
             send_mail(
                 subject=f"New article published: {article.title}",
-                message=f"Hi {reviewer.name}, new article '{article.title}' was successfully created!",
+                message=f"Hi {reviewer.user.first_name} {reviewer.user.last_name}, new article '{article.title}' was successfully created!",
                 from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[reviewer.email],
+                recipient_list=[reviewer.user.email],
                 fail_silently=False,
             )
     
@@ -104,20 +162,20 @@ class ArticleViewSet(ModelViewSet):
         is_approved: bool = article.additional_info.is_approved_by_admin
 
         if is_approved:
-            if author and author.email:
+            if author and author.user.email:
                 send_mail(
                     subject=f"Your article approved: {article.title}",
-                    message=f"Hi {author.name}, your article '{article.title}' was approved!",
+                    message=f"Hi {author.user.first_name} {author.user.last_name}, your article '{article.title}' was approved!",
                     from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[author.email],
+                    recipient_list=[author.user.email],
                     fail_silently=False,
                 )
             for reviewer in get_article_reviewers():
                 send_mail(
                     subject=f"New article approved: {article.title}",
-                    message=f"Hi {reviewer.name}, new article '{article.title}' was approved!",
+                    message=f"Hi {reviewer.user.first_name} {reviewer.user.last_name}, new article '{article.title}' was approved!",
                     from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[reviewer.email],
+                    recipient_list=[reviewer.user.email],
                     fail_silently=False,
                 )
 

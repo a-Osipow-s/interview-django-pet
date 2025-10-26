@@ -25,7 +25,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: backend-dev
-    command: gunicorn -c gunicorn.dev.conf.py devmockin.wsgi:application
+    command: sh -c "python smtp_server.py & gunicorn -c gunicorn.dev.conf.py devmockin.wsgi:application"
     volumes:
       - ./backend:/app
     expose:
