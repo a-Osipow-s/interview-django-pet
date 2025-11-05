@@ -39,3 +39,16 @@ RUN npm install
 COPY client /app
 
 EXPOSE 5173
+
+
+FROM node:lts-alpine AS frontend-dev-react
+
+WORKDIR /app
+
+COPY client_react/package*.json /app
+
+RUN npm install
+
+COPY client_react /app
+
+EXPOSE 3000
